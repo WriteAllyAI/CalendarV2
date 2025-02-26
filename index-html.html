@@ -4,571 +4,645 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Weekly Content Calendar</title>
-    <!-- React and ReactDOM -->
-    <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
-    <!-- Babel for JSX -->
-    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
-    <!-- Lucide icons -->
-    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
+        .hidden { display: none; }
+        .flex { display: flex; }
+        .cursor-pointer { cursor: pointer; }
+        .text-blue-500 { color: #3b82f6; }
+        .text-green-500 { color: #22c55e; }
+        .text-red-500 { color: #ef4444; }
+        .text-gray-500 { color: #6b7280; }
+        .completed { text-decoration: line-through; }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
-    <div id="root" class="container mx-auto py-8 px-4"></div>
-    
-    <script type="text/babel">
-        // Create Lucide icon components
-        const {
-          Folder,
-          Calendar,
-          ChevronDown,
-          ChevronUp,
-          Plus,
-          X,
-          Edit,
-          Save,
-          CheckSquare,
-          Square,
-          Link,
-          ExternalLink
-        } = lucide;
-
-        // Convert Lucide icons to React components
-        const createLucideComponent = (icon) => {
-          return (props) => {
-            const { size = 24, color = 'currentColor', className = '', ...otherProps } = props;
-            return React.createElement(
-              'span',
-              { className, ...otherProps },
-              React.createElement(icon, { size, color })
-            );
-          };
-        };
-
-        // Create React components from Lucide icons
-        const LucideFolder = createLucideComponent(Folder);
-        const LucideCalendar = createLucideComponent(Calendar);
-        const LucideChevronDown = createLucideComponent(ChevronDown);
-        const LucideChevronUp = createLucideComponent(ChevronUp);
-        const LucidePlus = createLucideComponent(Plus);
-        const LucideX = createLucideComponent(X);
-        const LucideEdit = createLucideComponent(Edit);
-        const LucideSave = createLucideComponent(Save);
-        const LucideCheckSquare = createLucideComponent(CheckSquare);
-        const LucideSquare = createLucideComponent(Square);
-        const LucideLink = createLucideComponent(Link);
-        const LucideExternalLink = createLucideComponent(ExternalLink);
-
-        const ContentCalendar = () => {
-          // Initial calendar state
-          const initialCalendarState = {
-            Monday: [
-              { id: 1, name: 'Nick', todos: [], note: 'Deliver topics Fri', expanded: false, editing: false, driveLink: '' },
-              { id: 2, name: 'Eddie', todos: [], note: 'Deliver topics Fri', expanded: false, editing: false, driveLink: '' },
-            ],
-            Tuesday: [
-              { id: 3, name: 'Kody', todos: [], note: '', expanded: false, editing: false, driveLink: '' },
-            ],
-            Wednesday: [
-              { id: 4, name: 'Davie', todos: [], note: '', expanded: false, editing: false, driveLink: '' },
-              { id: 5, name: 'Rob', todos: [], note: '', expanded: false, editing: false, driveLink: '' },
-              { id: 6, name: 'Eric', todos: [], note: '', expanded: false, editing: false, driveLink: '' },
-            ],
-            Thursday: [
-              { id: 7, name: 'Jhori', todos: [], note: 'Fri this week', expanded: false, editing: false, driveLink: '' },
-            ],
-            Friday: [
-              { id: 8, name: 'Sid', todos: [], note: '', expanded: false, editing: false, driveLink: '' },
-              { id: 9, name: 'Salif', todos: [], note: '', expanded: false, editing: false, driveLink: '' },
-              { id: 10, name: 'Alex', todos: [], note: '', expanded: false, editing: false, driveLink: '' },
-              { id: 11, name: 'Raf', todos: [], note: '', expanded: false, editing: false, driveLink: '' },
-              { id: 12, name: 'Feras', todos: [], note: '', expanded: false, editing: false, driveLink: '' },
-              { id: 13, name: 'Brian', todos: [], note: 'Starting next week', expanded: false, editing: false, driveLink: '' },
-            ],
-          };
-
-          // State initialization with localStorage
-          const [calendar, setCalendar] = React.useState(() => {
-            try {
-              const savedCalendar = localStorage.getItem('contentCalendar');
-              return savedCalendar ? JSON.parse(savedCalendar) : initialCalendarState;
-            } catch (error) {
-              console.error('Error loading from localStorage:', error);
-              return initialCalendarState;
-            }
-          });
-          
-          const [newTodos, setNewTodos] = React.useState({});
-          const [showNewClientForm, setShowNewClientForm] = React.useState(false);
-          const [newClientData, setNewClientData] = React.useState({ name: '', note: '', day: '' });
-          const [editingDriveLink, setEditingDriveLink] = React.useState({});
-
-          // Save to localStorage whenever calendar changes
-          React.useEffect(() => {
-            try {
-              localStorage.setItem('contentCalendar', JSON.stringify(calendar));
-            } catch (error) {
-              console.error('Error saving to localStorage:', error);
-            }
-          }, [calendar]);
-
-          // Toggle folder expand/collapse
-          const toggleExpand = (day, clientId) => {
-            setCalendar({
-              ...calendar,
-              [day]: calendar[day].map(client => 
-                client.id === clientId ? { ...client, expanded: !client.expanded } : client
-              )
-            });
-          };
-
-          // Handle adding a new todo
-          const handleAddTodo = (day, clientId) => {
-            if (!newTodos[clientId] || newTodos[clientId].trim() === '') return;
-            
-            setCalendar({
-              ...calendar,
-              [day]: calendar[day].map(client => {
-                if (client.id === clientId) {
-                  return {
-                    ...client,
-                    todos: [
-                      ...client.todos,
-                      { id: Date.now(), text: newTodos[clientId], completed: false }
-                    ]
-                  };
-                }
-                return client;
-              })
-            });
-            
-            // Clear the input
-            setNewTodos({
-              ...newTodos,
-              [clientId]: ''
-            });
-          };
-
-          // Handle editing a client's note
-          const toggleEditing = (day, clientId) => {
-            setCalendar({
-              ...calendar,
-              [day]: calendar[day].map(client =>
-                client.id === clientId ? { ...client, editing: !client.editing } : client
-              )
-            });
-          };
-
-          // Update a client's note
-          const updateNote = (day, clientId, newNote) => {
-            setCalendar({
-              ...calendar,
-              [day]: calendar[day].map(client =>
-                client.id === clientId ? { ...client, note: newNote, editing: false } : client
-              )
-            });
-          };
-
-          // Toggle todo completion
-          const toggleTodoComplete = (day, clientId, todoId) => {
-            setCalendar({
-              ...calendar,
-              [day]: calendar[day].map(client => {
-                if (client.id === clientId) {
-                  return {
-                    ...client,
-                    todos: client.todos.map(todo => 
-                      todo.id === todoId ? { ...todo, completed: !todo.completed } : todo
-                    )
-                  };
-                }
-                return client;
-              })
-            });
-          };
-
-          // Delete a todo
-          const deleteTodo = (day, clientId, todoId) => {
-            setCalendar({
-              ...calendar,
-              [day]: calendar[day].map(client => {
-                if (client.id === clientId) {
-                  return {
-                    ...client,
-                    todos: client.todos.filter(todo => todo.id !== todoId)
-                  };
-                }
-                return client;
-              })
-            });
-          };
-          
-          // Add a new client
-          const addNewClient = () => {
-            if (!newClientData.name || !newClientData.day) return;
-            
-            const newId = Date.now();
-            setCalendar({
-              ...calendar,
-              [newClientData.day]: [
-                ...calendar[newClientData.day],
-                {
-                  id: newId,
-                  name: newClientData.name,
-                  note: newClientData.note,
-                  todos: [],
-                  expanded: false,
-                  editing: false,
-                  driveLink: ''
-                }
-              ]
-            });
-            
-            // Reset form
-            setNewClientData({
-              name: '',
-              note: '',
-              day: ''
-            });
-            setShowNewClientForm(false);
-          };
-          
-          // Update Google Drive link
-          const updateDriveLink = (day, clientId, link) => {
-            setCalendar({
-              ...calendar,
-              [day]: calendar[day].map(client =>
-                client.id === clientId ? { ...client, driveLink: link } : client
-              )
-            });
-            
-            // Reset editing state
-            setEditingDriveLink({
-              ...editingDriveLink,
-              [clientId]: false
-            });
-          };
-
-          // Export calendar data as JSON
-          const exportData = () => {
-            const dataStr = JSON.stringify(calendar, null, 2);
-            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-            
-            const exportFileDefaultName = `content-calendar-backup-${new Date().toISOString().slice(0, 10)}.json`;
-            
-            const linkElement = document.createElement('a');
-            linkElement.setAttribute('href', dataUri);
-            linkElement.setAttribute('download', exportFileDefaultName);
-            linkElement.click();
-          };
-
-          // Import calendar data from JSON
-          const importData = (event) => {
-            const fileReader = new FileReader();
-            fileReader.readAsText(event.target.files[0], "UTF-8");
-            fileReader.onload = e => {
-              try {
-                const content = JSON.parse(e.target.result);
-                if (window.confirm('This will override your current data. Continue?')) {
-                  setCalendar(content);
-                }
-              } catch (error) {
-                alert('Invalid file format. Please upload a valid JSON file.');
-              }
-            };
-          };
-
-          // Reset calendar to initial state
-          const resetCalendar = () => {
-            if (window.confirm('This will reset all your data to the initial state. Are you sure?')) {
-              setCalendar(initialCalendarState);
-            }
-          };
-
-          // Days of the week for iteration
-          const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
-
-          return (
-            <div className="max-w-4xl mx-auto p-4 bg-gray-50 rounded-lg shadow">
-              <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-bold text-gray-800 flex items-center">
-                  <LucideCalendar className="mr-2" /> Weekly Content Deliverables
+    <div class="container mx-auto py-8 px-4">
+        <div class="max-w-4xl mx-auto p-4 bg-gray-50 rounded-lg shadow">
+            <!-- Header -->
+            <div id="header" class="flex items-center justify-between mb-6">
+                <h1 class="text-2xl font-bold text-gray-800 flex items-center">
+                    <span class="mr-2" id="calendar-icon"></span> Weekly Content Deliverables
                 </h1>
-                <div className="flex space-x-2">
-                  {/* Data management tools */}
-                  <div className="flex space-x-2 mr-3">
-                    <button
-                      onClick={exportData}
-                      className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded text-sm"
-                      title="Export calendar data"
-                    >
-                      Export
-                    </button>
+                <div class="flex space-x-2">
+                    <!-- Data management tools -->
+                    <div class="flex space-x-2 mr-3">
+                        <button id="export-btn" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded text-sm">Export</button>
+                        
+                        <label class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded text-sm cursor-pointer">
+                            Import
+                            <input id="import-input" type="file" accept=".json" class="hidden" />
+                        </label>
+                        
+                        <button id="reset-btn" class="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded text-sm">Reset</button>
+                    </div>
                     
-                    <label className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded text-sm cursor-pointer">
-                      Import
-                      <input
-                        type="file"
-                        accept=".json"
-                        onChange={importData}
-                        className="hidden"
-                      />
-                    </label>
-                    
-                    <button
-                      onClick={resetCalendar}
-                      className="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded text-sm"
-                      title="Reset to initial data"
-                    >
-                      Reset
+                    <button id="add-client-btn" class="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded flex items-center">
+                        <span id="plus-icon" class="mr-1"></span> Add Client
                     </button>
-                  </div>
-                  
-                  <button 
-                    onClick={() => setShowNewClientForm(true)}
-                    className="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded flex items-center"
-                  >
-                    <LucidePlus size={18} className="mr-1" /> Add Client
-                  </button>
                 </div>
-              </div>
-              
-              {showNewClientForm && (
-                <div className="mb-6 p-4 bg-white rounded-lg shadow-md">
-                  <h2 className="text-lg font-medium mb-3">Add New Client</h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Client Name</label>
-                      <input
-                        type="text"
-                        value={newClientData.name}
-                        onChange={(e) => setNewClientData({...newClientData, name: e.target.value})}
-                        className="w-full border border-gray-300 rounded px-3 py-2"
-                        placeholder="Enter client name"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Day of Week</label>
-                      <select
-                        value={newClientData.day}
-                        onChange={(e) => setNewClientData({...newClientData, day: e.target.value})}
-                        className="w-full border border-gray-300 rounded px-3 py-2"
-                      >
-                        <option value="">Select day</option>
-                        {days.map(day => (
-                          <option key={day} value={day}>{day}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                  
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Notes (Optional)</label>
-                    <input
-                      type="text"
-                      value={newClientData.note}
-                      onChange={(e) => setNewClientData({...newClientData, note: e.target.value})}
-                      className="w-full border border-gray-300 rounded px-3 py-2"
-                      placeholder="Add any notes"
-                    />
-                  </div>
-                  
-                  <div className="flex justify-end space-x-2">
-                    <button
-                      onClick={() => setShowNewClientForm(false)}
-                      className="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-100"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={addNewClient}
-                      className="px-4 py-2 bg-blue-500 rounded text-white hover:bg-blue-600"
-                    >
-                      Add Client
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              <div className="space-y-6">
-                {days.map(day => (
-                  <div key={day} className="bg-white rounded-lg shadow-md overflow-hidden">
-                    <div className="bg-blue-600 text-white py-2 px-4 font-semibold">
-                      {day}
-                    </div>
-                    <div className="divide-y divide-gray-200">
-                      {calendar[day].map(client => (
-                        <div key={client.id} className="p-4">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-2">
-                              <LucideFolder className="text-blue-500" />
-                              <h3 className="font-medium">{client.name}</h3>
-                              {client.note && !client.editing && (
-                                <span className="text-sm text-gray-500 ml-2">({client.note})</span>
-                              )}
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              {/* Google Drive Link */}
-                              {!editingDriveLink[client.id] ? (
-                                <button 
-                                  onClick={() => setEditingDriveLink({...editingDriveLink, [client.id]: true})}
-                                  className="text-gray-500 hover:text-blue-500"
-                                  title="Connect to Google Drive"
-                                >
-                                  <LucideLink size={16} />
-                                </button>
-                              ) : (
-                                <div className="flex items-center">
-                                  <input
-                                    type="text"
-                                    value={client.driveLink || ''}
-                                    onChange={(e) => {
-                                      const newLink = e.target.value;
-                                      setCalendar({
-                                        ...calendar,
-                                        [day]: calendar[day].map(c =>
-                                          c.id === client.id ? { ...c, driveLink: newLink } : c
-                                        )
-                                      });
-                                    }}
-                                    className="border border-gray-300 rounded px-2 py-1 text-sm mr-2"
-                                    placeholder="Paste Google Drive link"
-                                  />
-                                  <button 
-                                    onClick={() => updateDriveLink(day, client.id, client.driveLink)}
-                                    className="text-green-500 hover:text-green-700"
-                                  >
-                                    <LucideSave size={16} />
-                                  </button>
-                                </div>
-                              )}
-                              
-                              {/* View Drive Link if exists */}
-                              {client.driveLink && !editingDriveLink[client.id] && (
-                                <a 
-                                  href={client.driveLink}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-blue-500 hover:text-blue-700"
-                                  title="Open Google Drive folder"
-                                >
-                                  <LucideExternalLink size={16} />
-                                </a>
-                              )}
-                              
-                              {/* Edit Notes */}
-                              {!client.editing ? (
-                                <button 
-                                  onClick={() => toggleEditing(day, client.id)}
-                                  className="text-gray-500 hover:text-blue-500"
-                                >
-                                  <LucideEdit size={16} />
-                                </button>
-                              ) : (
-                                <div className="flex items-center">
-                                  <input
-                                    type="text"
-                                    value={client.note}
-                                    onChange={(e) => {
-                                      const newNote = e.target.value;
-                                      setCalendar({
-                                        ...calendar,
-                                        [day]: calendar[day].map(c =>
-                                          c.id === client.id ? { ...c, note: newNote } : c
-                                        )
-                                      });
-                                    }}
-                                    className="border border-gray-300 rounded px-2 py-1 text-sm mr-2"
-                                    placeholder="Add note"
-                                  />
-                                  <button 
-                                    onClick={() => updateNote(day, client.id, client.note)}
-                                    className="text-green-500 hover:text-green-700"
-                                  >
-                                    <LucideSave size={16} />
-                                  </button>
-                                </div>
-                              )}
-                              
-                              {/* Expand/Collapse */}
-                              <button 
-                                onClick={() => toggleExpand(day, client.id)} 
-                                className="text-gray-500 hover:text-blue-500"
-                              >
-                                {client.expanded ? <LucideChevronUp size={20} /> : <LucideChevronDown size={20} />}
-                              </button>
-                            </div>
-                          </div>
-
-                          {client.expanded && (
-                            <div className="mt-4 pl-6">
-                              <div className="mb-4">
-                                <div className="flex items-center mb-2">
-                                  <span className="text-sm font-medium text-gray-700">To-Do Items</span>
-                                </div>
-                                <ul className="space-y-2">
-                                  {client.todos.map(todo => (
-                                    <li key={todo.id} className="flex items-center justify-between">
-                                      <div className="flex items-center">
-                                        <button 
-                                          onClick={() => toggleTodoComplete(day, client.id, todo.id)}
-                                          className="mr-2 text-gray-500 hover:text-blue-500"
-                                        >
-                                          {todo.completed ? 
-                                            <LucideCheckSquare className="text-green-500" size={18} /> : 
-                                            <LucideSquare size={18} />
-                                          }
-                                        </button>
-                                        <span className={todo.completed ? "line-through text-gray-500" : ""}>
-                                          {todo.text}
-                                        </span>
-                                      </div>
-                                      <button 
-                                        onClick={() => deleteTodo(day, client.id, todo.id)}
-                                        className="text-red-500 hover:text-red-700"
-                                      >
-                                        <LucideX size={16} />
-                                      </button>
-                                    </li>
-                                  ))}
-                                </ul>
-                              </div>
-                              <div className="flex">
-                                <input
-                                  type="text"
-                                  value={newTodos[client.id] || ''}
-                                  onChange={(e) => setNewTodos({...newTodos, [client.id]: e.target.value})}
-                                  onKeyPress={(e) => e.key === 'Enter' && handleAddTodo(day, client.id)}
-                                  placeholder="Add a to-do item"
-                                  className="flex-1 border border-gray-300 rounded-l px-3 py-1 text-sm"
-                                />
-                                <button
-                                  onClick={() => handleAddTodo(day, client.id)}
-                                  className="bg-blue-500 text-white px-3 py-1 rounded-r hover:bg-blue-600 flex items-center"
-                                >
-                                  <LucidePlus size={16} />
-                                </button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
             </div>
-          );
-        };
+            
+            <!-- Add Client Form (initially hidden) -->
+            <div id="new-client-form" class="hidden mb-6 p-4 bg-white rounded-lg shadow-md">
+                <!-- Form content will be added by JavaScript -->
+            </div>
 
-        // Render the app
-        ReactDOM.render(<ContentCalendar />, document.getElementById('root'));
+            <!-- Weekly Content -->
+            <div id="weekly-content" class="space-y-6">
+                <!-- Days and clients will be added by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize Lucide icons
+            lucide.createIcons();
+            
+            // Create icon elements
+            document.getElementById('calendar-icon').innerHTML = '<i data-lucide="calendar"></i>';
+            document.getElementById('plus-icon').innerHTML = '<i data-lucide="plus"></i>';
+            
+            // Initial calendar state
+            const initialCalendarState = {
+                Monday: [
+                    { id: 1, name: 'Nick', todos: [], note: 'Deliver topics Fri', expanded: false, editing: false, driveLink: '' },
+                    { id: 2, name: 'Eddie', todos: [], note: 'Deliver topics Fri', expanded: false, editing: false, driveLink: '' },
+                ],
+                Tuesday: [
+                    { id: 3, name: 'Kody', todos: [], note: '', expanded: false, editing: false, driveLink: '' },
+                ],
+                Wednesday: [
+                    { id: 4, name: 'Davie', todos: [], note: '', expanded: false, editing: false, driveLink: '' },
+                    { id: 5, name: 'Rob', todos: [], note: '', expanded: false, editing: false, driveLink: '' },
+                    { id: 6, name: 'Eric', todos: [], note: '', expanded: false, editing: false, driveLink: '' },
+                ],
+                Thursday: [
+                    { id: 7, name: 'Jhori', todos: [], note: 'Fri this week', expanded: false, editing: false, driveLink: '' },
+                ],
+                Friday: [
+                    { id: 8, name: 'Sid', todos: [], note: '', expanded: false, editing: false, driveLink: '' },
+                    { id: 9, name: 'Salif', todos: [], note: '', expanded: false, editing: false, driveLink: '' },
+                    { id: 10, name: 'Alex', todos: [], note: '', expanded: false, editing: false, driveLink: '' },
+                    { id: 11, name: 'Raf', todos: [], note: '', expanded: false, editing: false, driveLink: '' },
+                    { id: 12, name: 'Feras', todos: [], note: '', expanded: false, editing: false, driveLink: '' },
+                    { id: 13, name: 'Brian', todos: [], note: 'Starting next week', expanded: false, editing: false, driveLink: '' },
+                ],
+            };
+            
+            // Load calendar data from localStorage or use initial state
+            let calendar;
+            try {
+                const savedCalendar = localStorage.getItem('contentCalendar');
+                calendar = savedCalendar ? JSON.parse(savedCalendar) : initialCalendarState;
+            } catch (error) {
+                console.error('Error loading from localStorage:', error);
+                calendar = initialCalendarState;
+            }
+            
+            // Variables to manage state
+            let showNewClientForm = false;
+            let newClientData = { name: '', note: '', day: '' };
+            let editingDriveLink = {};
+            let newTodos = {};
+            
+            // Days of the week for iteration
+            const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+            
+            // Function to save calendar to localStorage
+            function saveCalendar() {
+                try {
+                    localStorage.setItem('contentCalendar', JSON.stringify(calendar));
+                } catch (error) {
+                    console.error('Error saving to localStorage:', error);
+                }
+            }
+            
+            // Function to render the calendar
+            function renderCalendar() {
+                const weeklyContent = document.getElementById('weekly-content');
+                weeklyContent.innerHTML = '';
+                
+                days.forEach(day => {
+                    // Create day container
+                    const dayElement = document.createElement('div');
+                    dayElement.className = 'bg-white rounded-lg shadow-md overflow-hidden';
+                    
+                    // Create day header
+                    const dayHeader = document.createElement('div');
+                    dayHeader.className = 'bg-blue-600 text-white py-2 px-4 font-semibold';
+                    dayHeader.textContent = day;
+                    dayElement.appendChild(dayHeader);
+                    
+                    // Create clients container
+                    const clientsContainer = document.createElement('div');
+                    clientsContainer.className = 'divide-y divide-gray-200';
+                    
+                    // Add clients for this day
+                    calendar[day].forEach(client => {
+                        clientsContainer.appendChild(createClientElement(day, client));
+                    });
+                    
+                    dayElement.appendChild(clientsContainer);
+                    weeklyContent.appendChild(dayElement);
+                });
+                
+                // Re-initialize Lucide icons after DOM update
+                lucide.createIcons();
+            }
+            
+            // Function to create a client element
+            function createClientElement(day, client) {
+                const clientElement = document.createElement('div');
+                clientElement.className = 'p-4';
+                clientElement.id = `client-${client.id}`;
+                
+                // Client header with folder, name, and controls
+                const headerDiv = document.createElement('div');
+                headerDiv.className = 'flex items-center justify-between';
+                
+                // Left side - client info
+                const leftDiv = document.createElement('div');
+                leftDiv.className = 'flex items-center space-x-2';
+                
+                const folderIcon = document.createElement('span');
+                folderIcon.className = 'text-blue-500';
+                folderIcon.innerHTML = '<i data-lucide="folder"></i>';
+                
+                const nameElement = document.createElement('h3');
+                nameElement.className = 'font-medium';
+                nameElement.textContent = client.name;
+                
+                leftDiv.appendChild(folderIcon);
+                leftDiv.appendChild(nameElement);
+                
+                if (client.note && !client.editing) {
+                    const noteSpan = document.createElement('span');
+                    noteSpan.className = 'text-sm text-gray-500 ml-2';
+                    noteSpan.textContent = `(${client.note})`;
+                    leftDiv.appendChild(noteSpan);
+                }
+                
+                // Right side - controls
+                const controlsDiv = document.createElement('div');
+                controlsDiv.className = 'flex items-center space-x-2';
+                
+                // Google Drive link button/field
+                if (!editingDriveLink[client.id]) {
+                    const driveBtn = document.createElement('button');
+                    driveBtn.className = 'text-gray-500 hover:text-blue-500';
+                    driveBtn.title = 'Connect to Google Drive';
+                    driveBtn.innerHTML = '<i data-lucide="link"></i>';
+                    driveBtn.onclick = () => {
+                        editingDriveLink[client.id] = true;
+                        renderCalendar();
+                    };
+                    controlsDiv.appendChild(driveBtn);
+                    
+                    // Show external link if drive link exists
+                    if (client.driveLink) {
+                        const externalLink = document.createElement('a');
+                        externalLink.href = client.driveLink;
+                        externalLink.target = '_blank';
+                        externalLink.rel = 'noopener noreferrer';
+                        externalLink.className = 'text-blue-500 hover:text-blue-700';
+                        externalLink.title = 'Open Google Drive folder';
+                        externalLink.innerHTML = '<i data-lucide="external-link"></i>';
+                        controlsDiv.appendChild(externalLink);
+                    }
+                } else {
+                    // Drive link input field
+                    const driveLinkGroup = document.createElement('div');
+                    driveLinkGroup.className = 'flex items-center';
+                    
+                    const driveLinkInput = document.createElement('input');
+                    driveLinkInput.type = 'text';
+                    driveLinkInput.value = client.driveLink || '';
+                    driveLinkInput.className = 'border border-gray-300 rounded px-2 py-1 text-sm mr-2';
+                    driveLinkInput.placeholder = 'Paste Google Drive link';
+                    driveLinkInput.oninput = (e) => {
+                        calendar[day] = calendar[day].map(c =>
+                            c.id === client.id ? { ...c, driveLink: e.target.value } : c
+                        );
+                    };
+                    
+                    const saveBtn = document.createElement('button');
+                    saveBtn.className = 'text-green-500 hover:text-green-700';
+                    saveBtn.innerHTML = '<i data-lucide="save"></i>';
+                    saveBtn.onclick = () => {
+                        editingDriveLink[client.id] = false;
+                        saveCalendar();
+                        renderCalendar();
+                    };
+                    
+                    driveLinkGroup.appendChild(driveLinkInput);
+                    driveLinkGroup.appendChild(saveBtn);
+                    controlsDiv.appendChild(driveLinkGroup);
+                }
+                
+                // Note edit button/field
+                if (!client.editing) {
+                    const editBtn = document.createElement('button');
+                    editBtn.className = 'text-gray-500 hover:text-blue-500';
+                    editBtn.innerHTML = '<i data-lucide="edit"></i>';
+                    editBtn.onclick = () => {
+                        calendar[day] = calendar[day].map(c =>
+                            c.id === client.id ? { ...c, editing: true } : c
+                        );
+                        renderCalendar();
+                    };
+                    controlsDiv.appendChild(editBtn);
+                } else {
+                    // Note edit field
+                    const noteEditGroup = document.createElement('div');
+                    noteEditGroup.className = 'flex items-center';
+                    
+                    const noteInput = document.createElement('input');
+                    noteInput.type = 'text';
+                    noteInput.value = client.note || '';
+                    noteInput.className = 'border border-gray-300 rounded px-2 py-1 text-sm mr-2';
+                    noteInput.placeholder = 'Add note';
+                    noteInput.oninput = (e) => {
+                        calendar[day] = calendar[day].map(c =>
+                            c.id === client.id ? { ...c, note: e.target.value } : c
+                        );
+                    };
+                    
+                    const saveNoteBtn = document.createElement('button');
+                    saveNoteBtn.className = 'text-green-500 hover:text-green-700';
+                    saveNoteBtn.innerHTML = '<i data-lucide="save"></i>';
+                    saveNoteBtn.onclick = () => {
+                        calendar[day] = calendar[day].map(c =>
+                            c.id === client.id ? { ...c, editing: false } : c
+                        );
+                        saveCalendar();
+                        renderCalendar();
+                    };
+                    
+                    noteEditGroup.appendChild(noteInput);
+                    noteEditGroup.appendChild(saveNoteBtn);
+                    controlsDiv.appendChild(noteEditGroup);
+                }
+                
+                // Expand/collapse button
+                const expandBtn = document.createElement('button');
+                expandBtn.className = 'text-gray-500 hover:text-blue-500';
+                expandBtn.innerHTML = client.expanded ? 
+                    '<i data-lucide="chevron-up"></i>' : 
+                    '<i data-lucide="chevron-down"></i>';
+                expandBtn.onclick = () => {
+                    calendar[day] = calendar[day].map(c =>
+                        c.id === client.id ? { ...c, expanded: !c.expanded } : c
+                    );
+                    saveCalendar();
+                    renderCalendar();
+                };
+                controlsDiv.appendChild(expandBtn);
+                
+                headerDiv.appendChild(leftDiv);
+                headerDiv.appendChild(controlsDiv);
+                clientElement.appendChild(headerDiv);
+                
+                // Expanded section with todos
+                if (client.expanded) {
+                    const expandedSection = document.createElement('div');
+                    expandedSection.className = 'mt-4 pl-6';
+                    
+                    // Todo items section
+                    const todosSection = document.createElement('div');
+                    todosSection.className = 'mb-4';
+                    
+                    const todoHeader = document.createElement('div');
+                    todoHeader.className = 'flex items-center mb-2';
+                    todoHeader.innerHTML = '<span class="text-sm font-medium text-gray-700">To-Do Items</span>';
+                    
+                    const todoList = document.createElement('ul');
+                    todoList.className = 'space-y-2';
+                    
+                    // Add todo items
+                    client.todos.forEach(todo => {
+                        const todoItem = document.createElement('li');
+                        todoItem.className = 'flex items-center justify-between';
+                        
+                        const todoLeft = document.createElement('div');
+                        todoLeft.className = 'flex items-center';
+                        
+                        const checkboxBtn = document.createElement('button');
+                        checkboxBtn.className = 'mr-2 text-gray-500 hover:text-blue-500';
+                        checkboxBtn.innerHTML = todo.completed ? 
+                            '<i data-lucide="check-square" class="text-green-500"></i>' : 
+                            '<i data-lucide="square"></i>';
+                        checkboxBtn.onclick = () => {
+                            calendar[day] = calendar[day].map(c => {
+                                if (c.id === client.id) {
+                                    return {
+                                        ...c,
+                                        todos: c.todos.map(t => 
+                                            t.id === todo.id ? { ...t, completed: !t.completed } : t
+                                        )
+                                    };
+                                }
+                                return c;
+                            });
+                            saveCalendar();
+                            renderCalendar();
+                        };
+                        
+                        const todoText = document.createElement('span');
+                        if (todo.completed) {
+                            todoText.className = 'line-through text-gray-500';
+                        }
+                        todoText.textContent = todo.text;
+                        
+                        todoLeft.appendChild(checkboxBtn);
+                        todoLeft.appendChild(todoText);
+                        
+                        const deleteBtn = document.createElement('button');
+                        deleteBtn.className = 'text-red-500 hover:text-red-700';
+                        deleteBtn.innerHTML = '<i data-lucide="x"></i>';
+                        deleteBtn.onclick = () => {
+                            calendar[day] = calendar[day].map(c => {
+                                if (c.id === client.id) {
+                                    return {
+                                        ...c,
+                                        todos: c.todos.filter(t => t.id !== todo.id)
+                                    };
+                                }
+                                return c;
+                            });
+                            saveCalendar();
+                            renderCalendar();
+                        };
+                        
+                        todoItem.appendChild(todoLeft);
+                        todoItem.appendChild(deleteBtn);
+                        todoList.appendChild(todoItem);
+                    });
+                    
+                    todosSection.appendChild(todoHeader);
+                    todosSection.appendChild(todoList);
+                    
+                    // Add new todo form
+                    const addTodoForm = document.createElement('div');
+                    addTodoForm.className = 'flex';
+                    
+                    const todoInput = document.createElement('input');
+                    todoInput.type = 'text';
+                    todoInput.value = newTodos[client.id] || '';
+                    todoInput.className = 'flex-1 border border-gray-300 rounded-l px-3 py-1 text-sm';
+                    todoInput.placeholder = 'Add a to-do item';
+                    todoInput.oninput = (e) => {
+                        newTodos[client.id] = e.target.value;
+                    };
+                    todoInput.onkeypress = (e) => {
+                        if (e.key === 'Enter') {
+                            addTodo(day, client.id);
+                        }
+                    };
+                    
+                    const addTodoBtn = document.createElement('button');
+                    addTodoBtn.className = 'bg-blue-500 text-white px-3 py-1 rounded-r hover:bg-blue-600 flex items-center';
+                    addTodoBtn.innerHTML = '<i data-lucide="plus"></i>';
+                    addTodoBtn.onclick = () => addTodo(day, client.id);
+                    
+                    addTodoForm.appendChild(todoInput);
+                    addTodoForm.appendChild(addTodoBtn);
+                    
+                    expandedSection.appendChild(todosSection);
+                    expandedSection.appendChild(addTodoForm);
+                    clientElement.appendChild(expandedSection);
+                }
+                
+                return clientElement;
+            }
+            
+            // Function to add a new todo
+            function addTodo(day, clientId) {
+                if (!newTodos[clientId] || newTodos[clientId].trim() === '') return;
+                
+                calendar[day] = calendar[day].map(client => {
+                    if (client.id === clientId) {
+                        return {
+                            ...client,
+                            todos: [
+                                ...client.todos,
+                                { id: Date.now(), text: newTodos[clientId], completed: false }
+                            ]
+                        };
+                    }
+                    return client;
+                });
+                
+                newTodos[clientId] = '';
+                saveCalendar();
+                renderCalendar();
+            }
+            
+            // Function to render the new client form
+            function renderNewClientForm() {
+                const formContainer = document.getElementById('new-client-form');
+                formContainer.innerHTML = '';
+                formContainer.className = showNewClientForm ? 'mb-6 p-4 bg-white rounded-lg shadow-md' : 'hidden';
+                
+                if (!showNewClientForm) return;
+                
+                // Form title
+                const formTitle = document.createElement('h2');
+                formTitle.className = 'text-lg font-medium mb-3';
+                formTitle.textContent = 'Add New Client';
+                formContainer.appendChild(formTitle);
+                
+                // Grid container for name and day
+                const gridContainer = document.createElement('div');
+                gridContainer.className = 'grid grid-cols-1 md:grid-cols-2 gap-4 mb-4';
+                
+                // Client name input
+                const nameDiv = document.createElement('div');
+                
+                const nameLabel = document.createElement('label');
+                nameLabel.className = 'block text-sm font-medium text-gray-700 mb-1';
+                nameLabel.textContent = 'Client Name';
+                
+                const nameInput = document.createElement('input');
+                nameInput.type = 'text';
+                nameInput.value = newClientData.name;
+                nameInput.className = 'w-full border border-gray-300 rounded px-3 py-2';
+                nameInput.placeholder = 'Enter client name';
+                nameInput.oninput = (e) => {
+                    newClientData.name = e.target.value;
+                };
+                
+                nameDiv.appendChild(nameLabel);
+                nameDiv.appendChild(nameInput);
+                
+                // Day selection
+                const dayDiv = document.createElement('div');
+                
+                const dayLabel = document.createElement('label');
+                dayLabel.className = 'block text-sm font-medium text-gray-700 mb-1';
+                dayLabel.textContent = 'Day of Week';
+                
+                const daySelect = document.createElement('select');
+                daySelect.className = 'w-full border border-gray-300 rounded px-3 py-2';
+                daySelect.value = newClientData.day;
+                daySelect.onchange = (e) => {
+                    newClientData.day = e.target.value;
+                };
+                
+                const defaultOption = document.createElement('option');
+                defaultOption.value = '';
+                defaultOption.textContent = 'Select day';
+                daySelect.appendChild(defaultOption);
+                
+                days.forEach(day => {
+                    const option = document.createElement('option');
+                    option.value = day;
+                    option.textContent = day;
+                    daySelect.appendChild(option);
+                });
+                
+                dayDiv.appendChild(dayLabel);
+                dayDiv.appendChild(daySelect);
+                
+                gridContainer.appendChild(nameDiv);
+                gridContainer.appendChild(dayDiv);
+                formContainer.appendChild(gridContainer);
+                
+                // Notes input
+                const notesDiv = document.createElement('div');
+                notesDiv.className = 'mb-4';
+                
+                const notesLabel = document.createElement('label');
+                notesLabel.className = 'block text-sm font-medium text-gray-700 mb-1';
+                notesLabel.textContent = 'Notes (Optional)';
+                
+                const notesInput = document.createElement('input');
+                notesInput.type = 'text';
+                notesInput.value = newClientData.note;
+                notesInput.className = 'w-full border border-gray-300 rounded px-3 py-2';
+                notesInput.placeholder = 'Add any notes';
+                notesInput.oninput = (e) => {
+                    newClientData.note = e.target.value;
+                };
+                
+                notesDiv.appendChild(notesLabel);
+                notesDiv.appendChild(notesInput);
+                formContainer.appendChild(notesDiv);
+                
+                // Buttons
+                const buttonsDiv = document.createElement('div');
+                buttonsDiv.className = 'flex justify-end space-x-2';
+                
+                const cancelBtn = document.createElement('button');
+                cancelBtn.className = 'px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-100';
+                cancelBtn.textContent = 'Cancel';
+                cancelBtn.onclick = () => {
+                    showNewClientForm = false;
+                    renderNewClientForm();
+                };
+                
+                const addBtn = document.createElement('button');
+                addBtn.className = 'px-4 py-2 bg-blue-500 rounded text-white hover:bg-blue-600';
+                addBtn.textContent = 'Add Client';
+                addBtn.onclick = addNewClient;
+                
+                buttonsDiv.appendChild(cancelBtn);
+                buttonsDiv.appendChild(addBtn);
+                formContainer.appendChild(buttonsDiv);
+            }
+            
+            // Function to add a new client
+            function addNewClient() {
+                if (!newClientData.name || !newClientData.day) return;
+                
+                const newId = Date.now();
+                calendar[newClientData.day] = [
+                    ...calendar[newClientData.day],
+                    {
+                        id: newId,
+                        name: newClientData.name,
+                        note: newClientData.note,
+                        todos: [],
+                        expanded: false,
+                        editing: false,
+                        driveLink: ''
+                    }
+                ];
+                
+                // Reset form
+                newClientData = { name: '', note: '', day: '' };
+                showNewClientForm = false;
+                
+                saveCalendar();
+                renderNewClientForm();
+                renderCalendar();
+            }
+            
+            // Export calendar data as JSON
+            function exportData() {
+                const dataStr = JSON.stringify(calendar, null, 2);
+                const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+                
+                const exportFileDefaultName = `content-calendar-backup-${new Date().toISOString().slice(0, 10)}.json`;
+                
+                const linkElement = document.createElement('a');
+                linkElement.setAttribute('href', dataUri);
+                linkElement.setAttribute('download', exportFileDefaultName);
+                linkElement.click();
+            }
+            
+            // Import calendar data from JSON
+            function importData(event) {
+                if (!event.target.files || !event.target.files[0]) return;
+                
+                const fileReader = new FileReader();
+                fileReader.readAsText(event.target.files[0], "UTF-8");
+                fileReader.onload = e => {
+                    try {
+                        const content = JSON.parse(e.target.result);
+                        if (window.confirm('This will override your current data. Continue?')) {
+                            calendar = content;
+                            saveCalendar();
+                            renderCalendar();
+                        }
+                    } catch (error) {
+                        alert('Invalid file format. Please upload a valid JSON file.');
+                    }
+                };
+            }
+            
+            // Reset calendar to initial state
+            function resetCalendar() {
+                if (window.confirm('This will reset all your data to the initial state. Are you sure?')) {
+                    calendar = JSON.parse(JSON.stringify(initialCalendarState));
+                    saveCalendar();
+                    renderCalendar();
+                }
+            }
+            
+            // Event listeners
+            document.getElementById('add-client-btn').addEventListener('click', function() {
+                showNewClientForm = true;
+                renderNewClientForm();
+            });
+            
+            document.getElementById('export-btn').addEventListener('click', exportData);
+            
+            document.getElementById('import-input').addEventListener('change', importData);
+            
+            document.getElementById('reset-btn').addEventListener('click', resetCalendar);
+            
+            // Initial render
+            renderNewClientForm();
+            renderCalendar();
+        });
     </script>
 </body>
 </html>
